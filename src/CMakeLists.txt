@@ -42,4 +42,5 @@ function(add_day aoc_day)
 endfunction()
 
 add_day(01)
+add_day(02)
 
