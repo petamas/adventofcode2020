@@ -41,6 +41,7 @@ function(add_day aoc_day)
     target_sources(aoc PRIVATE "day${aoc_day}.cpp")
 endfunction()
 
+# Generated code, do not touch down from here
 add_day(01)
 add_day(02)
 add_day(03)
