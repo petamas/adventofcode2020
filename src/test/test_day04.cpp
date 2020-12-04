@@ -18,11 +18,11 @@ TEST(day04first, personal)
 TEST(day04second, example)
 {
     std::stringstream ss(day04::example_input);
-    EXPECT_EQ(day04::solve(ss, Task::SECOND), 0);
+    EXPECT_EQ(day04::solve(ss, Task::SECOND), 2);
 }
 
 TEST(day04second, personal)
 {
     std::stringstream ss(day04::personal_input);
-    EXPECT_EQ(day04::solve(ss, Task::SECOND), 0);
+    EXPECT_EQ(day04::solve(ss, Task::SECOND), 198);
 }
