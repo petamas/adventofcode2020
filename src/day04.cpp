@@ -3,11 +3,114 @@
 
 namespace day04 {
 
-using PassportData = std::map<std::string, std::string>;
+class line_iterator
+    : public boost::iterator_facade<line_iterator, const std::string, std::input_iterator_tag> {
+public:
+    line_iterator() = default;
+    explicit line_iterator(std::istream& is, bool with_newline = false)
+        : is(&is)
+        , with_newline(with_newline)
+    {
+        increment();
+    }
+private:
+    friend class boost::iterator_core_access;
+
+    void increment() {
+        std::getline(*is, line);
+        if (with_newline)
+            line += '\n';
+    }
+
+    bool equal(line_iterator const& other) const
+    {
+        return this->is == other.is || (this->end_of_stream() && other.end_of_stream());
+    }
+
+    const std::string& dereference() const {
+        return line;
+    }
+
+    bool end_of_stream() const {
+        return is == nullptr || is->fail();
+    }
+
+    std::istream* is = nullptr;
+    bool with_newline = false;
+    std::string line;
+};
+
+boost::iterator_range<line_iterator> line_range(std::istream& is, bool with_newline = false) {
+    return { line_iterator(is, with_newline), line_iterator() };
+}
+
+namespace adl {
+    template<class Range>
+    auto begin(Range&& r) {
+        using std::begin;
+        return begin(std::forward<Range>(r));
+    }
+
+    template<class Range>
+    auto end(Range&& r) {
+        using std::end;
+        return end(std::forward<Range>(r));
+    }
+
+}
+
+template<class Func>
+struct tokenizer_func {
+    tokenizer_func(Func f) : f(std::move(f)) {}
+
+    template <typename InputIterator, typename Token>
+    bool operator()(InputIterator& next, InputIterator end, Token& tok) {
+        if (next == end)
+            return false;
+        std::optional<Token> opt_tok = f(next, end);
+        if (!opt_tok)
+            return false;
+        tok = *opt_tok;
+        return true;
+    }
+
+    void reset() {}
+private:
+    Func f;
+};
+
+template <typename Token, typename InputIterator, typename Func>
+auto make_tokenizer(InputIterator begin, InputIterator end, Func f)
+    -> boost::tokenizer<tokenizer_func<Func>, InputIterator, Token>
+{
+    return { begin, end, tokenizer_func<Func>(std::move(f)) };
+}
+
+template <typename Token, typename Range, typename Func>
+auto make_tokenizer(const Range& r, Func f)
+    -> boost::tokenizer<tokenizer_func<Func>, decltype(adl::begin(r)), Token>
+{
+    return make_tokenizer<Token>(adl::begin(r), adl::end(r), std::move(f));
+}
 
 struct Passport {
-    PassportData data;
-    using value_type = PassportData::value_type;
+    std::map<std::string, std::string> data;
+
+    static Passport parse(const std::string& line) {
+        std::stringstream ss(line);
+        Passport passport;
+        boost::transform(
+            boost::istream_range<std::string>(ss),
+            std::inserter(passport.data, passport.data.end()),
+            [](const std::string& s) {
+                auto pos = s.find(':');
+                const std::string key(s.data(), pos);
+                const std::string value(s.data() + pos + 1);
+                return std::make_pair(key, value);
+            }
+        );
+        return passport;
+    }
 
     static bool validate_yr(const std::string& s, int min, int max) {
         if (s.size() != 4 || !boost::algorithm::all_of(s, isdigit))
@@ -73,54 +176,27 @@ struct Passport {
 
         bool all_valid = boost::algorithm::all_of(data, [](const auto& p) {
             auto it = fields.find(p.first);
-            return it == fields.end() || it->second == nullptr || (*it->second)(p.second);
+            return it == fields.end() || it->second == nullptr || std::invoke(it->second, p.second);
         });
 
         return all_valid;
     }
 };
 
-std::istream& operator>>(std::istream& is, Passport& passport) {
-    std::string line;
-    std::getline(is, line);
-    std::stringstream ss(line);
-    passport.data.clear();
-    boost::transform(
-        boost::istream_range<std::string>(ss),
-        std::inserter(passport.data, passport.data.end()),
-        [](const std::string& s) {
-            auto pos = s.find(':');
-            const std::string key(s.data(), pos);
-            const std::string value(s.data() + pos + 1);
-            return PassportData::value_type(key, value);
-        });
-    return is;
-}
-
-std::ostream& operator<<(std::ostream& os, const Passport& passport) {
-    boost::transform(passport.data, std::ostream_iterator<std::string>(os, " "), [](const PassportData::value_type& p){
-        return p.first + ": \"" + p.second + "\"";
-    });
-    return os;
-}
-
 int64_t solve(std::istream& is, Task task) {
-    std::vector<Passport> input;
-    boost::copy(boost::istream_range<Passport>(is), std::back_inserter(input));
-    input = boost::accumulate(input, std::vector<Passport>(1), [](std::vector<Passport> acc, const Passport& current) {
-        if (current.data.empty()) {
-            // start new logical line
-            acc.emplace_back();
-        } else {
-            // expand on previous line
-            acc.back().data.insert(current.data.begin(), current.data.end());
-        }
-        return acc;
+    std::vector<std::string> input;
+    boost::copy(line_range(is, true), std::back_inserter(input));
+
+    auto lines = make_tokenizer<std::string>(input, [](auto& next, auto end) {
+        auto begin = std::exchange(next, std::find(next, end, "\n"));
+        std::string tok = std::accumulate(begin, next, std::string(""));
+        if (next != end)
+            ++next;
+        return tok;
     });
-
-    // boost::copy(input, std::ostream_iterator<Passport>(std::cout, "\n"));
-
-    return boost::count_if(input, [&](const Passport& passport) {
+        
+    auto passports = boost::adaptors::transform(lines, &Passport::parse);
+    return boost::count_if(passports, [&](const Passport& passport) {
         return passport.check(task == Task::SECOND);
     });
 }
