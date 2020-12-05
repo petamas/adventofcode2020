@@ -10,7 +10,10 @@ struct Line {
 };
 
 std::istream& operator>>(std::istream& is, Line& line) {
-    return is >> line.minimum >> skip('-') >> line.maximum >> skip(' ') >> line.ch >> skip(':') >> line.password;
+    return is
+        >> line.minimum >> aoc::skip('-') >> line.maximum
+        >> aoc::skip(' ') >> line.ch
+        >> aoc::skip(':') >> line.password;
 }
 
 int64_t solve(std::istream& is, Task task) {

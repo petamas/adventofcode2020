@@ -4,8 +4,7 @@
 namespace day01 {
 
 int64_t solve(std::istream& is, Task task) {
-    std::vector<int> input;
-    boost::copy(boost::istream_range<int>(is), std::back_inserter(input));
+    std::vector<int> input = aoc::to_vector(boost::istream_range<int>(is));
     boost::sort(input);
     auto pred = [&](int x) { return boost::binary_search(input, 2020 - x); };
     auto ans = [](auto... xs) { return ((2020 - (xs + ...)) * ... * xs); };

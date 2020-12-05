@@ -4,8 +4,7 @@
 namespace day03 {
 
 int64_t solve(std::istream& is, Task task) {
-    std::vector<std::string> input;
-    boost::copy(boost::istream_range<std::string>(is), std::back_inserter(input));
+    std::vector<std::string> input = aoc::to_vector(boost::istream_range<std::string>(is));
 
     auto ans = [&input](int right, int down) -> int64_t {
         auto tree = [right](const auto& line) {

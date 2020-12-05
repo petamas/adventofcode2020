@@ -4,6 +4,42 @@
 
 enum class Task { FIRST, SECOND };
 
+
+namespace adl {
+template<class Range>
+auto begin(Range&& r) {
+    using std::begin;
+    return begin(std::forward<Range>(r));
+}
+
+template<class Range>
+auto end(Range&& r) {
+    using std::end;
+    return end(std::forward<Range>(r));
+}
+} // namespace adl
+
+namespace aoc {
+
+/* std::remove_cvref (C++20) */
+
+template< class T >
+struct remove_cvref {
+    typedef std::remove_cv_t<std::remove_reference_t<T>> type;
+};
+
+template< class T >
+using remove_cvref_t = typename remove_cvref<T>::type;
+
+/* to_vector(Range) */
+
+template<class Range>
+auto to_vector(const Range& r) -> std::vector<remove_cvref_t<decltype(*r.begin())>> {
+    return std::vector<remove_cvref_t<decltype(*r.begin())>>(adl::begin(r), adl::end(r));
+}
+
+/* istream skip() */
+
 template<class T>
 struct skip_t { T wrapped; };
 
@@ -21,6 +57,88 @@ std::istream& operator>>(std::istream& is, const skip_t<T>& skipper) {
     }
     return is;
 }
+
+/* istream line_iterator */
+
+class line_iterator
+    : public boost::iterator_facade<line_iterator, const std::string, std::input_iterator_tag> {
+public:
+    line_iterator() = default;
+    explicit line_iterator(std::istream& is, bool with_newline = false)
+        : is(&is)
+        , with_newline(with_newline)
+    {
+        increment();
+    }
+private:
+    friend class boost::iterator_core_access;
+
+    void increment() {
+        std::getline(*is, line);
+        if (with_newline)
+            line += '\n';
+    }
+
+    bool equal(line_iterator const& other) const
+    {
+        return this->is == other.is || (this->end_of_stream() && other.end_of_stream());
+    }
+
+    const std::string& dereference() const {
+        return line;
+    }
+
+    bool end_of_stream() const {
+        return is == nullptr || is->fail();
+    }
+
+    std::istream* is = nullptr;
+    bool with_newline = false;
+    std::string line;
+};
+
+inline boost::iterator_range<line_iterator> line_range(std::istream& is, bool with_newline = false) {
+    return { line_iterator(is, with_newline), line_iterator() };
+}
+
+/* boost::tokenizer wrapper */
+
+template<class Func>
+struct tokenizer_func {
+    tokenizer_func(Func f) : f(std::move(f)) {}
+
+    template <typename InputIterator, typename Token>
+    bool operator()(InputIterator& next, InputIterator end, Token& tok) {
+        if (next == end)
+            return false;
+        std::optional<Token> opt_tok = f(next, end);
+        if (!opt_tok)
+            return false;
+        tok = *opt_tok;
+        return true;
+    }
+
+    void reset() {}
+private:
+    Func f;
+};
+
+template <typename Token, typename InputIterator, typename Func>
+auto make_tokenizer(InputIterator begin, InputIterator end, Func f)
+-> boost::tokenizer<tokenizer_func<Func>, InputIterator, Token>
+{
+    return { begin, end, tokenizer_func<Func>(std::move(f)) };
+}
+
+template <typename Token, typename Range, typename Func>
+auto make_tokenizer(const Range& r, Func f)
+-> boost::tokenizer<tokenizer_func<Func>, decltype(adl::begin(r)), Token>
+{
+    return make_tokenizer<Token>(adl::begin(r), adl::end(r), std::move(f));
+}
+
+
+} // namespace aoc
 
 // Generated code, do not touch down from here
 namespace day01 { int64_t solve(std::istream& is, Task task); }

@@ -15,8 +15,7 @@ struct pos {
 };
 
 int64_t solve(std::istream& is, Task task) {
-    std::vector<std::string> input;
-    boost::copy(boost::istream_range<std::string>(is), std::back_inserter(input));
+    auto input = aoc::to_vector(boost::istream_range<std::string>(is));
 
     std::vector<int> seats;
     boost::transform(input, std::back_inserter(seats), [](const std::string& s) {
