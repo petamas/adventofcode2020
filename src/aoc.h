@@ -38,6 +38,12 @@ auto to_vector(const Range& r) -> std::vector<remove_cvref_t<decltype(*r.begin()
     return std::vector<remove_cvref_t<decltype(*r.begin())>>(adl::begin(r), adl::end(r));
 }
 
+template<class Range>
+auto to_set(const Range& r) -> std::set<remove_cvref_t<decltype(*r.begin())>> {
+    return std::set<remove_cvref_t<decltype(*r.begin())>>(adl::begin(r), adl::end(r));
+}
+
+
 /* istream skip() */
 
 template<class T>
@@ -137,6 +143,18 @@ auto make_tokenizer(const Range& r, Func f)
     return make_tokenizer<Token>(adl::begin(r), adl::end(r), std::move(f));
 }
 
+template <typename ForwardIterator, typename Value>
+auto split_range(ForwardIterator first, ForwardIterator last, const Value& separator) {
+    return make_tokenizer<boost::iterator_range<ForwardIterator>>(
+        first, last, [&separator](ForwardIterator& next, ForwardIterator end) {
+            ForwardIterator begin = std::exchange(next, std::find(next, end, separator));
+            boost::iterator_range<ForwardIterator> rv(begin, next);
+            if (next != end)
+                ++next;
+            return rv;
+        }
+    );
+}
 
 } // namespace aoc
 
