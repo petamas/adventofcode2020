@@ -4,16 +4,15 @@
 
 enum class Task { FIRST, SECOND };
 
-
 namespace adl {
 template<class Range>
-auto begin(Range&& r) {
+typename boost::range_iterator<Range>::type begin(Range&& r) {
     using std::begin;
     return begin(std::forward<Range>(r));
 }
 
 template<class Range>
-auto end(Range&& r) {
+typename boost::range_iterator<Range>::type end(Range&& r) {
     using std::end;
     return end(std::forward<Range>(r));
 }
@@ -31,16 +30,24 @@ struct remove_cvref {
 template< class T >
 using remove_cvref_t = typename remove_cvref<T>::type;
 
+/* range_XXX_t */
+
+template<class Range>
+using range_iterator_t = typename boost::range_iterator<Range>::type;
+
+template<class Range>
+using range_value_t = typename boost::range_value<Range>::type;
+
 /* to_vector(Range) */
 
 template<class Range>
-auto to_vector(const Range& r) -> std::vector<remove_cvref_t<decltype(*r.begin())>> {
-    return std::vector<remove_cvref_t<decltype(*r.begin())>>(adl::begin(r), adl::end(r));
+std::vector<range_value_t<Range>> to_vector(const Range& r) {
+    return std::vector<range_value_t<Range>>(adl::begin(r), adl::end(r));
 }
 
 template<class Range>
-auto to_set(const Range& r) -> std::set<remove_cvref_t<decltype(*r.begin())>> {
-    return std::set<remove_cvref_t<decltype(*r.begin())>>(adl::begin(r), adl::end(r));
+std::set<range_value_t<Range>> to_set(const Range& r) {
+    return std::set<range_value_t<Range>>(adl::begin(r), adl::end(r));
 }
 
 
@@ -110,18 +117,16 @@ inline boost::iterator_range<line_iterator> line_range(std::istream& is, bool wi
 /* boost::tokenizer wrapper */
 
 template<class Func>
-struct tokenizer_func {
-    tokenizer_func(Func f) : f(std::move(f)) {}
+struct simple_tokenizer_func {
+    simple_tokenizer_func(Func f)
+        : f(std::move(f))
+    {}
 
     template <typename InputIterator, typename Token>
     bool operator()(InputIterator& next, InputIterator end, Token& tok) {
         if (next == end)
             return false;
-        std::optional<Token> opt_tok = f(next, end);
-        if (!opt_tok)
-            return false;
-        tok = *opt_tok;
-        return true;
+        return f(next, end, tok);
     }
 
     void reset() {}
@@ -130,30 +135,79 @@ private:
 };
 
 template <typename Token, typename InputIterator, typename Func>
-auto make_tokenizer(InputIterator begin, InputIterator end, Func f)
--> boost::tokenizer<tokenizer_func<Func>, InputIterator, Token>
+boost::tokenizer<Func, InputIterator, Token>
+make_tokenizer(InputIterator begin, InputIterator end, Func f)
 {
-    return { begin, end, tokenizer_func<Func>(std::move(f)) };
+    return boost::tokenizer<Func, InputIterator, Token>(begin, end, std::move(f));
 }
 
 template <typename Token, typename Range, typename Func>
-auto make_tokenizer(const Range& r, Func f)
--> boost::tokenizer<tokenizer_func<Func>, decltype(adl::begin(r)), Token>
+boost::tokenizer<Func, range_iterator_t<const Range>, Token>
+make_tokenizer(const Range& r, Func f)
 {
     return make_tokenizer<Token>(adl::begin(r), adl::end(r), std::move(f));
 }
 
-template <typename ForwardIterator, typename Value>
-auto split_range(ForwardIterator first, ForwardIterator last, const Value& separator) {
-    return make_tokenizer<boost::iterator_range<ForwardIterator>>(
-        first, last, [&separator](ForwardIterator& next, ForwardIterator end) {
-            ForwardIterator begin = std::exchange(next, std::find(next, end, separator));
-            boost::iterator_range<ForwardIterator> rv(begin, next);
-            if (next != end)
-                ++next;
-            return rv;
-        }
-    );
+template <typename Token, typename InputIterator, typename Func>
+boost::tokenizer<simple_tokenizer_func<Func>, InputIterator, Token>
+make_simple_tokenizer(InputIterator begin, InputIterator end, Func f)
+{
+    return make_tokenizer<Token>(begin, end, simple_tokenizer_func<Func>(std::move(f)));
+}
+
+template <typename Token, typename Range, typename Func>
+boost::tokenizer<simple_tokenizer_func<Func>, typename boost::range_iterator<const Range>::type, Token>
+make_simple_tokenizer(const Range& r, Func f)
+{
+    return make_simple_tokenizer<Token>(adl::begin(r), adl::end(r), std::move(f));
+}
+
+template<typename ForwardIterator>
+struct split_range_function {
+    using value_type = typename std::iterator_traits<ForwardIterator>::value_type;
+
+    split_range_function(value_type separator)
+        : separator(std::move(separator))
+    {}
+
+    template <typename InputIterator>
+    bool operator()(InputIterator& next, InputIterator end, boost::iterator_range<ForwardIterator>& tok) {
+        if (done)
+            return false;
+
+        ForwardIterator begin = std::exchange(next, std::find(next, end, separator));
+        tok = boost::iterator_range<ForwardIterator>(begin, next);
+        if (next == end)
+            done = true;
+        else
+            ++next;
+
+        return true;
+    }
+
+    void reset() { done = false; }
+private:
+    value_type separator;
+    bool done = false;
+};
+
+template<typename ForwardIterator>
+using split_range_tokenizer = boost::tokenizer<split_range_function<ForwardIterator>, ForwardIterator, boost::iterator_range<ForwardIterator>>;
+
+template <typename ForwardIterator>
+split_range_tokenizer<ForwardIterator> split_range(
+    ForwardIterator first, ForwardIterator last,
+    typename std::iterator_traits<ForwardIterator>::value_type separator)
+{
+    return { first, last, split_range_function<ForwardIterator>(std::move(separator)) };
+}
+
+template <typename Range>
+split_range_tokenizer<range_iterator_t<Range>> split_range(
+    const Range& range,
+    range_value_t<Range> separator)
+{
+    return split_range(adl::begin(range), adl::end(range), std::move(separator));
 }
 
 } // namespace aoc
