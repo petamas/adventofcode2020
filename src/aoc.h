@@ -146,3 +146,4 @@ namespace day02 { int64_t solve(std::istream& is, Task task); }
 namespace day03 { int64_t solve(std::istream& is, Task task); }
 namespace day04 { int64_t solve(std::istream& is, Task task); }
 namespace day05 { int64_t solve(std::istream& is, Task task); }
+namespace day06 { int64_t solve(std::istream& is, Task task); }
