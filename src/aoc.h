@@ -116,12 +116,21 @@ inline boost::iterator_range<line_iterator> line_range(std::istream& is, bool wi
 
 /* split range */
 
+template<class ForwardIterator>
+using iterator_split_result = boost::iterator_range<boost::algorithm::split_iterator<ForwardIterator>>;
+
+template<class Range>
+using range_split_result = iterator_split_result<typename Range::const_iterator>;
+
+template<class Range>
+using range_split_element = boost::iterator_range<typename Range::const_iterator>;
+
 template <typename ForwardIterator>
-auto split_range(
+iterator_split_result<ForwardIterator> split(
     ForwardIterator first, ForwardIterator last,
     typename std::iterator_traits<ForwardIterator>::value_type separator)
 {
-    return boost::iterator_range<boost::algorithm::split_iterator<ForwardIterator>>(
+    return iterator_split_result<ForwardIterator>(
         boost::algorithm::split_iterator<ForwardIterator>(first, last,
             boost::algorithm::token_finder([separator](const auto& value) { return value == separator; })),
         boost::algorithm::split_iterator<ForwardIterator>()
@@ -129,12 +138,28 @@ auto split_range(
 }
 
 template <typename Range>
-auto split_range(
+range_split_result<Range> split(
     const Range& range,
     range_value_t<Range> separator)
 {
-    return split_range(adl::begin(range), adl::end(range), std::move(separator));
+    return split(adl::begin(range), adl::end(range), std::move(separator));
 }
+
+/* set operations */
+template<class T>
+std::set<T> set_intersection(const std::set<T>& a, const std::set<T>& b) {
+    std::set<T> rv;
+    boost::set_intersection(a, b, std::inserter(rv, rv.end()));
+    return rv;
+}
+
+template<class T>
+std::set<T> set_union(const std::set<T>& a, const std::set<T>& b) {
+    std::set<T> rv;
+    boost::set_union(a, b, std::inserter(rv, rv.end()));
+    return rv;
+}
+
 
 } // namespace aoc
 

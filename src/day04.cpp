@@ -96,7 +96,7 @@ struct Passport {
 int64_t solve(std::istream& is, Task task) {
     std::vector<std::string> input = aoc::to_vector(aoc::line_range(is, true));
 
-    auto passports = aoc::split_range(input, "\n")
+    auto passports = aoc::split(input, "\n")
         | boost::adaptors::transformed([](const auto& line) { return boost::accumulate(line, std::string()); })
         | boost::adaptors::transformed(&Passport::parse);
 
