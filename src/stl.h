@@ -5,6 +5,7 @@
 #include <iterator>
 #include <map>
 #include <optional>
+#include <regex>
 #include <set>
 #include <sstream>
 #include <string>
@@ -13,6 +14,7 @@
 
 #include <boost/algorithm/algorithm.hpp>
 #include <boost/algorithm/cxx11/all_of.hpp>
+#include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/algorithm/string/find_iterator.hpp>
 #include <boost/algorithm/string/finder.hpp>
 #include <boost/iterator.hpp>
