@@ -96,15 +96,10 @@ struct Passport {
 int64_t solve(std::istream& is, Task task) {
     std::vector<std::string> input = aoc::to_vector(aoc::line_range(is, true));
 
-    auto lines = aoc::make_simple_tokenizer<std::string>(input, [](auto& next, auto end, auto& tok) {
-        auto begin = std::exchange(next, std::find(next, end, "\n"));
-        tok = std::accumulate(begin, next, std::string(""));
-        if (next != end)
-            ++next;
-        return true;
-    });
-        
-    auto passports = boost::adaptors::transform(lines, &Passport::parse);
+    auto passports = aoc::split_range(input, "\n")
+        | boost::adaptors::transformed([](const auto& line) { return boost::accumulate(line, std::string()); })
+        | boost::adaptors::transformed(&Passport::parse);
+
     return boost::count_if(passports, [&](const Passport& passport) {
         return passport.check(task == Task::SECOND);
     });

@@ -13,6 +13,8 @@
 
 #include <boost/algorithm/algorithm.hpp>
 #include <boost/algorithm/cxx11/all_of.hpp>
+#include <boost/algorithm/string/find_iterator.hpp>
+#include <boost/algorithm/string/finder.hpp>
 #include <boost/iterator.hpp>
 #include <boost/io/ios_state.hpp>
 #include <boost/lexical_cast.hpp>
@@ -23,5 +25,3 @@
 #include <boost/range/irange.hpp>
 #include <boost/range/istream_range.hpp>
 #include <boost/range/numeric.hpp>
-#include <boost/tokenizer.hpp>
-

@@ -5,7 +5,7 @@ namespace day06 {
 
 int64_t solve(std::istream& is, Task task) {
     std::vector<std::string> input = aoc::to_vector(aoc::line_range(is));
-    auto groups = aoc::split_range(input.begin(), input.end(), "");
+    auto groups = aoc::split_range(input, "");
 
     return boost::accumulate(boost::adaptors::transform(groups, [task](const auto& group) {
         std::set<char> init = group.empty() ? std::set<char>{} : aoc::to_set(*group.begin());
