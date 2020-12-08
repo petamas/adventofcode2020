@@ -145,22 +145,6 @@ range_split_result<Range> split(
     return split(adl::begin(range), adl::end(range), std::move(separator));
 }
 
-/* set operations */
-template<class T>
-std::set<T> set_intersection(const std::set<T>& a, const std::set<T>& b) {
-    std::set<T> rv;
-    boost::set_intersection(a, b, std::inserter(rv, rv.end()));
-    return rv;
-}
-
-template<class T>
-std::set<T> set_union(const std::set<T>& a, const std::set<T>& b) {
-    std::set<T> rv;
-    boost::set_union(a, b, std::inserter(rv, rv.end()));
-    return rv;
-}
-
-
 } // namespace aoc
 
 // Generated code, do not touch down from here
