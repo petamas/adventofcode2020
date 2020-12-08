@@ -11,35 +11,34 @@ size_t color_id(const std::string& s) {
     return db[s];
 }
 
+size_t color_id(const std::string adj, const std::string col) {
+    return color_id(adj + " " + col);
+}
 
 struct Req {
     size_t color;
     size_t num;
 };
 
+std::istream& operator>>(std::istream& is, Req& req) {
+    std::array<std::string, 3> words;
+    if (is >> req.num >> words[0] >> words[1] >> words[2])
+        req.color = color_id(words[0], words[1]);
+    return is;
+}
+
 struct Bag {
     size_t color;
     std::vector<Req> reqs;
 
     static Bag parse(const std::string& line) {
-        const std::regex line_regex(R"((\w+ \w+) bags contain.*)");
-        std::smatch line_match;
-        bool line_success = std::regex_match(line, line_match, line_regex) && line_match.size() == 2;
-        assert(line_success);
+        std::stringstream ss(line);
+        std::array<std::string, 4> words;
+        ss >> words[0] >> words[1] >> words[2] >> words[3];
 
         Bag bag;
-        bag.color = color_id(line_match[1].str());
-
-        const std::regex req_regex(R"((\d+) (\w+ \w+) bags?)");
-
-        std::transform(
-            std::sregex_iterator(line.begin(), line.end(), req_regex),
-            std::sregex_iterator(),
-            std::back_inserter(bag.reqs),
-            [](const std::smatch& match) {
-                return Req{ color_id(match[2].str()), boost::lexical_cast<size_t>(match[1].str()) };
-            }
-        );
+        bag.color = color_id(words[0], words[1]);
+        boost::copy(boost::istream_range<Req>(ss), std::back_inserter(bag.reqs));
         return bag;
     }
 };
