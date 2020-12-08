@@ -21,6 +21,7 @@
 #include <boost/iterator.hpp>
 #include <boost/io/ios_state.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/indexed.hpp>
 #include <boost/range/adaptor/strided.hpp>
 #include <boost/range/adaptor/transformed.hpp>
