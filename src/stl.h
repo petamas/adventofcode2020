@@ -23,6 +23,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/indexed.hpp>
+#include <boost/range/adaptor/sliced.hpp>
 #include <boost/range/adaptor/strided.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm.hpp>
