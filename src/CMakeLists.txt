@@ -13,6 +13,8 @@ target_link_libraries(aoc
         boost
 )
 
+target_precompile_headers(aoc PRIVATE "stl.h")
+
 function(add_day aoc_day)
     set(test_target "test_day${aoc_day}")
     set(input_header "generated/input${aoc_day}.h")
@@ -35,6 +37,8 @@ function(add_day aoc_day)
             gtest
             gtest_main
     )
+    
+    target_precompile_headers("${test_target}" REUSE_FROM aoc)
 
     add_test(NAME "${test_target}" COMMAND "${test_target}")
     
